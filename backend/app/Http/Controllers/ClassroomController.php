@@ -52,7 +52,6 @@ class ClassroomController extends Controller
         Classroom $classroom,
     ) {
         $classroom->update($request->validated());
-
         return new ClassroomResource($classroom->refresh()->load('students'));
     }
 
@@ -62,7 +61,6 @@ class ClassroomController extends Controller
     public function destroy(Classroom $classroom)
     {
         $classroom->delete();
-
         return response()->noContent();
     }
 }

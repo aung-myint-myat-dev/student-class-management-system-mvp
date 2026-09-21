@@ -41,7 +41,7 @@ class StudentController extends Controller
     public function show(
         Student $student
     ) {
-        return new StudentResource($student->load('classroom'));
+        return new StudentResource($student->load('classroom:id,name'));
     }
 
     /**

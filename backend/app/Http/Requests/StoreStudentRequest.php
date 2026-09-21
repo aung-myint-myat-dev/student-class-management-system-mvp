@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Override;
 
 class StoreStudentRequest extends FormRequest
 {
@@ -24,8 +25,8 @@ class StoreStudentRequest extends FormRequest
     {
         return [
             'classroom_id' => [
-                'required',
                 'bail',
+                'required',
                 'integer',
                 'exists:classrooms,id',
             ],
@@ -48,6 +49,14 @@ class StoreStudentRequest extends FormRequest
                 'min:6',
                 'max:12'
             ]
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'classroom_id.exists' => 'Class is required.',
+            'classroom_id.required' => 'Class is invalid.',
         ];
     }
 }
