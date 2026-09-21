@@ -60,6 +60,11 @@ class ClassroomController extends Controller
      */
     public function destroy(Classroom $classroom)
     {
+        if($classroom->students()->exists()) {
+            return response()->json([
+                'message' => 'Students register this class. Cannot delete.',
+            ], 409);
+        }
         $classroom->delete();
         return response()->noContent();
     }

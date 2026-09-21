@@ -10,7 +10,20 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from "@/components/ui/pagination"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEffect, useState } from "react";
 import { getStudents } from "./api/get-students";
 import type { Student } from "./types";
@@ -30,6 +43,9 @@ export default function Students() {
   const [deleteStudent, setDeleteStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(false);
   const { setBreadcrumbs } = useBreadcrumb()
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [lastPage, setLastPage] = useState(1)
 
   useEffect(() => {
     setBreadcrumbs([
@@ -43,11 +59,16 @@ export default function Students() {
     ])
   }, [setBreadcrumbs])
 
-  const fetchStudents = async () => {
+  const fetchStudents = async (page = currentPage, limit = perPage) => {
     try {
       setFetchingStudents(true)
-      const data = await getStudents()
-      setStudents(data)
+      const res = await getStudents({
+        page: page,
+        perPage: limit
+      })
+      setStudents(res.data)
+      setCurrentPage(res.meta.current_page)
+      setLastPage(res.meta.last_page)
     } catch (error) {
       console.error(
         "Failed to fetch students:",
@@ -72,19 +93,19 @@ export default function Students() {
         response.status === 200
       ) {
         toast.success(
-          "Classroom deleted successfully."
+          "Student deleted successfully."
         )
-        setStudents((prev) =>
-          prev.filter(
-            (student) =>
-              student.id !== id
-          )
-        )
+        const isStudentOnLastPage = students.length === 1
+        if(isStudentOnLastPage && currentPage > 1) {
+          fetchStudents(currentPage - 1, perPage)
+        } else {
+          fetchStudents(currentPage, perPage)
+        }
       }
     } catch (error) {
       console.error(error)
       toast.error(
-        "Failed to delete classroom."
+        "Failed to delete student."
       )
     } finally {
       setLoading(false)
@@ -92,12 +113,17 @@ export default function Students() {
     }
   }
 
+  const goToPage = (page: number) => {
+    if( page < 1 || page > lastPage || page === currentPage || fetchingStudents ) { return }
+    fetchStudents(page, perPage)
+  }
+
   useEffect(() => {
-    fetchStudents()
-  }, [])
+    fetchStudents(1, perPage)
+  }, [perPage])
 
   return (
-    <div className="p-3 flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="p-3">
         <h2 className="font-bold text-2xl">All Students List</h2>
         <p className="text-sm text-accent-foreground">You can see your students here.</p>
@@ -110,7 +136,7 @@ export default function Students() {
               <TableHead className="w-75 ps-3">Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead className="text-right pe-3">Class</TableHead>
+              <TableHead>Class</TableHead>
               <TableHead className="text-right pe-3"></TableHead>
             </TableRow>
           </TableHeader>
@@ -131,14 +157,14 @@ export default function Students() {
           )}
 
           {/* Data Table */}
-          {students.length > 0 && (
+          {students.length > 0 && !fetchingStudents && (
             <TableBody>
               {students.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell className="font-medium ps-3">{student.name}</TableCell>
-                  <TableCell>{student.class.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
-                  <TableCell className="text-right pe-3">{student.phone}</TableCell>
+                  <TableCell>{student.phone}</TableCell>
+                  <TableCell>{student.class.name}</TableCell>
                   <TableCell className="text-right pe-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -167,7 +193,7 @@ export default function Students() {
 
                         <DropdownMenuItem
                           variant="destructive"
-                          onSelect={(e) => { e.preventDefault();setDeleteStudent(student) }} >
+                          onSelect={(e) => { e.preventDefault(); setDeleteStudent(student) }} >
                           <Trash2 className="size-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -183,6 +209,44 @@ export default function Students() {
           )}
         </Table>
       </div>
+
+      {/* Paginator */}
+      {!fetchingStudents && lastPage > 1 && (
+        <div className="flex items-center justify-between gap-4">
+          <Field orientation="horizontal" className="w-fit">
+            <FieldLabel htmlFor="select-rows-per-page">Rows per page</FieldLabel>
+            <Select defaultValue={String(perPage)}
+            onValueChange={(value) => {
+              setPerPage(Number(value))
+              setCurrentPage(1)
+            }}>
+              <SelectTrigger className="w-20" id="select-rows-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="start">
+                <SelectGroup>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Pagination className="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <Button disabled={currentPage === 1} variant={'outline'} onClick={() => goToPage(currentPage - 1)}>Previous</Button>
+              </PaginationItem>
+              <PaginationItem>
+                <Button disabled={currentPage === lastPage} variant={'outline'} onClick={() => goToPage(currentPage + 1)}>Next</Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       {/* Delete confirmation */}
       <AlertDialog
@@ -212,5 +276,3 @@ export default function Students() {
     </div>
   )
 }
-
-
