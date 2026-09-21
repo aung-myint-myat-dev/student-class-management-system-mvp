@@ -2,11 +2,9 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import { toast } from "sonner"
 import { Ellipsis, Eye, Pencil, Trash2 } from "lucide-react"
-
 import { getClassrooms } from "./api/get-classrooms"
 import { deleteClassroom as apiDeleteClassroom } from "./api/delete-classroom"
 import type { Classroom } from "./types"
-
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -17,6 +15,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useBreadcrumb } from "@/context/breadcrumb-context"
+import { AxiosError } from "axios"
 
 export default function Classrooms() {
   const navigate = useNavigate()
@@ -46,6 +61,10 @@ export default function Classrooms() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [deleteClassroom, setDeleteClassroom] = useState<Classroom | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [lastPage, setLastPage] = useState(1)
 
   useEffect(() => {
     setBreadcrumbs([
@@ -59,13 +78,18 @@ export default function Classrooms() {
     ])
   }, [setBreadcrumbs])
 
-  const fetchClassrooms = async () => {
+  const fetchClassrooms = async (page = currentPage, limit = perPage) => {
     try {
       setFetchingClassrooms(true)
 
-      const data = await getClassrooms()
+      const res = await getClassrooms({
+        page: page,
+        perPage: limit
+      })
 
-      setClassrooms(data)
+      setClassrooms(res.data)
+      setCurrentPage(res.meta.current_page)
+      setLastPage(res.meta.last_page)
     } catch (error) {
       console.error("Failed to fetch classrooms:", error)
       toast.error("Failed to load classrooms.")
@@ -82,26 +106,40 @@ export default function Classrooms() {
 
       if (response.status === 204 || response.status === 200) {
         toast.success("Classroom deleted successfully.")
+        const isClassroomOnLastPage = classrooms.length === 1
 
-        setClassrooms((prev) =>
-          prev.filter((classroom) => classroom.id !== id)
-        )
+        if (isClassroomOnLastPage && currentPage > 1) {
+          fetchClassrooms(currentPage - 1, perPage)
+        } else {
+          fetchClassrooms(currentPage, perPage)
+        }
       }
     } catch (error) {
-      console.error(error)
-      toast.error("Failed to delete classroom.")
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 409) {
+          toast.error(
+            error.response.data.message ?? "Cannot delete this classroom."
+          )
+          return
+        }
+      }
     } finally {
       setLoading(false)
       setDeleteClassroom(null)
     }
   }
 
+  const goToPage = (page: number) => {
+    if (page < 1 || page > lastPage || page === currentPage || fetchingClassrooms) { return }
+    fetchClassrooms(page, perPage)
+  }
+
   useEffect(() => {
-    fetchClassrooms()
-  }, [])
+    fetchClassrooms(1, perPage)
+  }, [perPage])
 
   return (
-    <div className="flex flex-col gap-4 p-3">
+    <div className="flex flex-col gap-4">
       <div className="p-3">
         <h2 className="text-2xl font-bold">
           All Classrooms List
@@ -215,6 +253,43 @@ export default function Classrooms() {
         </Table>
       </div>
 
+      {!fetchingClassrooms && lastPage > 1 && (
+        <div className="flex items-center justify-between gap-4">
+          <Field orientation="horizontal" className="w-fit">
+            <FieldLabel htmlFor="select-rows-per-page">Rows per page</FieldLabel>
+            <Select defaultValue={String(perPage)} onValueChange={(value) => {
+              setPerPage(Number(value))
+              setCurrentPage(1)
+            }}>
+              <SelectTrigger className="w-20" id="select-rows-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="start">
+                <SelectGroup>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Pagination className="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <Button disabled={currentPage === 1 || fetchingClassrooms} variant="outline"
+                  onClick={() => goToPage(currentPage - 1)}>Previous</Button>
+              </PaginationItem>
+              <PaginationItem>
+                <Button disabled={currentPage === lastPage || fetchingClassrooms} variant="outline"
+                  onClick={() => goToPage(currentPage + 1)}>Next</Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
       <AlertDialog
         open={!!deleteClassroom}
         onOpenChange={(open) => {
@@ -228,11 +303,9 @@ export default function Classrooms() {
             <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
               <Trash2 />
             </AlertDialogMedia>
-
             <AlertDialogTitle>
               Delete classroom?
             </AlertDialogTitle>
-
             <AlertDialogDescription>
               This will permanently delete this classroom.
             </AlertDialogDescription>
@@ -263,5 +336,3 @@ export default function Classrooms() {
     </div>
   )
 }
-
-
