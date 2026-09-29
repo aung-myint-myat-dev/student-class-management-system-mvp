@@ -9,6 +9,9 @@ import Classrooms from "./app/classrooms"
 import ClassroomAction from "./app/classrooms/action"
 import { ClassroomDetail } from "./app/classrooms/show"
 import { Loader2Icon } from "lucide-react"
+import { StudentBanks } from "./app/student-banks"
+import { TestLayout } from "./layouts/TestLayout"
+import { BankDetail } from "./app/student-banks/show"
 
 function HydrateFallback() {
   return (
@@ -93,5 +96,19 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/student-banks',
+    element: <TestLayout/>,
+    children: [
+      {
+        index: true,
+        element: <StudentBanks/>
+      },
+      {
+        path: ':studentCode',
+        element: <BankDetail/>
+      }
+    ]
   },
 ])

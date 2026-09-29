@@ -9,7 +9,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, SquareChartGantt, User, BookText, GraduationCap } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, SquareChartGantt, User, BookText, GraduationCap, CreditCard } from "lucide-react"
 import { NavLink } from "react-router"
 
 const data = {
@@ -90,6 +90,20 @@ const data = {
         },
       ],
     },
+    {
+      title: "Finance",
+      url: "#",
+      isActive: true,
+      icon: (
+        <CreditCard/>
+      ),
+      items: [
+        {
+          title: "Student Banks",
+          url: "student-banks"
+        }
+      ]
+    }
   ]
 }
 
