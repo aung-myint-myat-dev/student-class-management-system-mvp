@@ -1,9 +1,9 @@
 import { Eye, ImageIcon, Pencil, RotateCcwClock, Trash2 } from 'lucide-react'
-import type { TransactionHistory } from '../data/student-banks';
 import { isCreditBalance } from '../lib/is-credit-balance';
+import type { _studentBankTranscation } from '../data/schema';
 
 interface TranscationHistoriesTableProps {
-  histories: TransactionHistory[]
+  histories: _studentBankTranscation[]
   mainBalance: number
 }
 export function TranscationHistoriesTable({ histories, mainBalance }: TranscationHistoriesTableProps) {
@@ -73,26 +73,26 @@ export function TranscationHistoriesTable({ histories, mainBalance }: Transcatio
                   </td>
 
                   <td className="px-4 py-3 text-sm text-zinc-600">
-                    {history.transaction_type === 'cashin' ? history.amount.toLocaleString() + ' MMK' : '-'}
+                    {history.transcation_type === 'cash_in' ? history.amount.toLocaleString() + ' MMK' : '-'}
                   </td>
 
                   <td className="px-4 py-3 text-sm text-red-600">
-                    {history.transaction_type === 'cashout' ? history.amount.toLocaleString() + ' MMK' : '-'}
+                    {history.transcation_type === 'cash_out' ? history.amount.toLocaleString() + ' MMK' : '-'}
                   </td>
 
                   <td className="px-4 py-3 text-sm text-zinc-600">
                     {history.payment_method?.toLocaleUpperCase() ?? '-'}
                   </td>
 
-                  <td className={`px-4 py-3 font-semibold text-right text-sm ${isCreditBalance(history.remaining_balance) ? 'text-red-500' : 'text-zinc-600'}`}>
+                  <td className={`px-4 py-3 font-semibold text-right text-sm ${isCreditBalance(history.amount) ? 'text-red-500' : 'text-zinc-600'}`}>
                     <span>
-                      {history.remaining_balance.toLocaleString()}
+                      {history.amount.toLocaleString()}
                     </span> {' '}
                     MMK
                   </td>
 
                   <td className="px-4 py-3 text-sm text-zinc-600">
-                    <div className='relative size-12 overflow-hidden rounded-sm border ml-auto'>
+                    {/* <div className='relative size-12 overflow-hidden rounded-sm border ml-auto'>
                       {history.images.length > 0 ? (
                         <>
                           <img src={history.images[0]} alt="" className='w-full h-full object-cover' />
@@ -103,7 +103,7 @@ export function TranscationHistoriesTable({ histories, mainBalance }: Transcatio
                       ) : (
                         <ImageIcon className='w-full h-full text-zinc-300' />
                       )}
-                    </div>
+                    </div> */}
                   </td>
 
                   <td className="px-6 py-3">

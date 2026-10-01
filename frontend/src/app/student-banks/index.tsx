@@ -11,6 +11,7 @@ import { BanksTable } from './components/banks-table'
 import { api } from '@/lib/api'
 import type { _studentBankSchema } from './data/schema'
 import { BankAction } from './components/bank-actions'
+import { AxiosError } from 'axios'
 
 export function StudentBanks() {
   const [banks, setBanks] = useState<_studentBankSchema[]>([])
@@ -47,11 +48,6 @@ export function StudentBanks() {
     }
   }
 
-  useEffect(() => {
-    fetchBanks()
-  }, [currentPage, perPage])
-
-  console.log(paginator)
   const handleSearchInput = (event: React.ChangeEvent<HTMLInputElement>,) => {
     const value = event.target.value
     setSearchInput(value)
@@ -63,7 +59,7 @@ export function StudentBanks() {
       fetchBanks(1, perPage, searchInput)
     }, 400)
     return () => clearTimeout(timeout)
-  }, [searchInput])
+  }, [searchInput, currentPage, perPage])
 
   const handleEditBank = (
     bank: _studentBankSchema,
@@ -73,9 +69,6 @@ export function StudentBanks() {
     // Edit dialog logic here
   }
 
-  // --------------------------------------------------
-  // Open Delete Confirmation
-  // --------------------------------------------------
   const handleDeleteBank = (code: string) => {
     const bank = banks.find(
       (item) => item.student_code === code,
@@ -94,19 +87,29 @@ export function StudentBanks() {
     setSelectedBank(null)
   }
 
+  const submitForm = async (payload: any) => {
+    try {
+      await api.post('/student-banks', payload)
+      fetchBanks(1, perPage, searchInput)
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 422) {
+        const errors = error.response.data
+        console.log("post error: ", errors)
+      }
+    }
+  }
+
   const deleteBank = async () => {
     if (!selectedBank) {
       return
     }
-
     try {
       await api.delete(
-        `/student-banks/${selectedBank.student_code}`,
+        `/student-banks/${selectedBank.id}`,
       )
       setSelectedBank(null)
       setShowDeleteConfirmation(false)
       await fetchBanks()
-
       if (
         paginator &&
         paginator.current_page > 1 &&
@@ -192,7 +195,7 @@ export function StudentBanks() {
         setOpen={setShowActionForm}
         selectedBank={selectedBank}
         isEdit={isEdit}
-        onSave={() => console.log('helo')}
+        onSave={submitForm}
       />
 
       {/* Delete Confirmation */}

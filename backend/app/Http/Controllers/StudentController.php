@@ -17,28 +17,18 @@ class StudentController extends Controller
         Request $request,
     ) {
         $students = Student::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->input('search');
+                $query->where('student_code', $search);
+            })
             ->with(['classroom:id,name'])
             ->latest()
             ->paginate(
                 perPage: $request->integer('per_page', 10),
             );
+
         return StudentResource::collection($students);
     }
-
-    public function findByCode(
-        string $student_code
-    ) {
-        $student = Student::where('student_code', $student_code)->get();
-        if(!$student) {
-            return response()->json(
-                [
-                    'message' => 'error'
-                ]
-            );
-        }
-        return new StudentResource($student);
-    }
-    
 
     /**
      * Store a newly created resource in storage.

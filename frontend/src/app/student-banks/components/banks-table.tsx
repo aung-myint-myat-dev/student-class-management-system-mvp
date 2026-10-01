@@ -80,7 +80,7 @@ export function BanksTable({
                   <td className="px-6 py-3">
                     <div className="flex justify-end gap-3">
                       <button
-                        onClick={() => navigate(`/student-banks/${bank.student_code.toLocaleLowerCase()}`)}
+                        onClick={() => navigate(`/student-banks/${bank.id}`)}
                         type="button">
                         <Eye className="size-4 cursor-pointer text-blue-500" />
                       </button>

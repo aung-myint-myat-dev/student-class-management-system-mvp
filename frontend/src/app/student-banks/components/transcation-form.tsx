@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/buttom";
-import { ClipboardList, ClipboardPlus, Save, X } from "lucide-react";
+import { ClipboardPlus, Save, X } from "lucide-react";
 import { type TranscationFormType } from "../types";
 import { TranscationTypeRadio } from "./ui/transcation-type-radio";
 
@@ -170,11 +170,7 @@ function PaymentMethodSelect({ enable }: PaymentMethodSelectProps) {
         defaultValue=""
         className={`h-full max-h-full w-full bg-transparent text-sm ${enable ? 'text-zinc-700' : 'text-zinc-300'} outline-none`}
       >
-        <option value="" disabled>
-          Select payment method
-        </option>
-
-        <option value="cash">Cash</option>
+        <option defaultValue="cash" value="cash">Cash</option>
         <option value="kbzpay">KBZ Pay</option>
         <option value="wavepay">Wave Pay</option>
       </select>

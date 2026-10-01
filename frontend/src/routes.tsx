@@ -106,7 +106,7 @@ export const router = createBrowserRouter([
         element: <StudentBanks/>
       },
       {
-        path: ':studentCode',
+        path: ':id',
         element: <BankDetail/>
       }
     ]

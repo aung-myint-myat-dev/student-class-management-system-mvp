@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Save, Search, X, XIcon } from 'lucide-react'
-import { students, type Student } from '../data/students'
 import type { StudentBank } from '../data/student-banks'
 import { Button } from './ui/buttom'
 import { api } from '@/lib/api'
+import type { _studentSchema } from '../data/schema'
 
 type FormData = {
   amountType: 'credit' | 'debit' | ''
@@ -21,7 +21,7 @@ interface BankActionProps {
   setOpen: (value: boolean) => void
   isEdit?: boolean
   selectedBank: StudentBank | null
-  onSave: (bank: StudentBank) => void
+  onSave: (payload: any) => void
 }
 
 const emptyFormData: FormData = {
@@ -37,7 +37,7 @@ export function BankAction({
   onSave,
 }: BankActionProps) {
   const [studentCode, setStudentCode] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState<_studentSchema | null>(null)
   const [formData, setFormData] = useState<FormData>(emptyFormData)
   const [errors, setErrors] = useState<FormErrors>({})
 
@@ -83,8 +83,7 @@ export function BankAction({
   }
 
   const searchStudent = async () => {
-    const code = studentCode.trim().toLowerCase()
-
+    const code = studentCode.trim()
     if (!code) {
       setSelectedStudent(null)
       setErrors((prev) => ({
@@ -93,25 +92,19 @@ export function BankAction({
       }))
       return
     }
-
-    const res = await api.get(`students/find/${code}`)
-
-    console.log(res.data.data)
-
-    const student = students.find((student) => student.studentCode.toLowerCase() === code,)
-
+    const res = await api.get(`students?search=${code}`)
+    const student = res.data.data[0]
     if (!student) {
       setSelectedStudent(null)
-
       setErrors((prev) => ({
         ...prev,
         studentCode: 'Student not found.',
       }))
       return
     }
-
-    setSelectedStudent(student)
-
+    if(student) {
+      setSelectedStudent(student)
+    }
     setErrors((prev) => ({
       ...prev,
       studentCode: '',
@@ -155,14 +148,15 @@ export function BankAction({
     const amount = Number(formData.amount)
     const balance = formData.amountType === 'credit' ? -amount : amount
 
-    // const bank: StudentBank = {
-    //   studentCode: selectedStudent.studentCode,
-    //   name: selectedStudent.name,
-    //   fatherName: selectedStudent.fatherName,
-    //   current_grade: selectedStudent.current_grade,
-    //   balance: balance,
-    // }
-    // onSave()
+    const payload = {
+      student_code: studentCode,
+      student_name: selectedStudent.name,
+      father_name: selectedStudent.father_name,
+      grade: selectedStudent.class.name,
+      amount_type: formData.amountType,
+      balance: balance,
+    }
+    onSave(payload)
     closeForm()
   }
 
@@ -330,7 +324,7 @@ export function BankAction({
 
                 <input
                   id="father-name"
-                  value={selectedStudent?.fatherName ?? ''}
+                  value={selectedStudent?.father_name ?? ''}
                   disabled
                   placeholder="Father name"
                   className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"
@@ -347,7 +341,7 @@ export function BankAction({
 
                 <input
                   id="current-grade"
-                  value={selectedStudent?.current_grade ?? ''}
+                  value={selectedStudent?.class.name ?? ''}
                   disabled
                   placeholder="Current Grade"
                   className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"

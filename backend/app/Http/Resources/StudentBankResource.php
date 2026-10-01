@@ -21,6 +21,7 @@ class StudentBankResource extends JsonResource
             'father_name' => $this->father_name,
             'grade' => $this->grade,
             'balance' => $this->balance,
+            'transcations' => $this->whenLoaded('transcations'),
         ];
     }
 }

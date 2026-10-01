@@ -46,6 +46,11 @@ class StoreStudentBankRequest extends FormRequest
                 'string',
             ],
 
+            'amount_type' => [
+                'required',
+                'string',
+            ],
+
             'balance' => [
                 'required',
                 'decimal:0,2',
