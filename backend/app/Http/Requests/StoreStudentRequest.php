@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Override;
 
 class StoreStudentRequest extends FormRequest
 {
@@ -34,21 +33,21 @@ class StoreStudentRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255'
+                'max:255',
             ],
 
             'email' => [
                 'required',
                 'email',
                 'unique:students,email',
-            ], 
+            ],
 
             'phone' => [
                 'nullable',
                 'string',
                 'min:6',
-                'max:12'
-            ]
+                'max:12',
+            ],
         ];
     }
 

@@ -1,34 +1,33 @@
-import { getPageNumbers } from "../lib/get-page-numbers"
+import { getPageNumbers } from '../lib/get-page-numbers'
 
+export type LaravelPaginator<T> = {
+  current_page: number
+  data: T[]
+  from: number | null
+  last_page: number
+  per_page: number
+  to: number | null
+  total: number
+  first_page_url: string
+  last_page_url: string
+  next_page_url: string | null
+  prev_page_url: string | null
+}
 
 type PaginatorProps = {
-  currentPage: number
-  totalPages: number
-  totalItems: number
-  perPage: number
+  paginator: LaravelPaginator<unknown>
   onPageChange: (page: number) => void
   onPerPageChange: (perPage: number) => void
   label?: string
 }
 
 export function Paginator({
-  currentPage,
-  totalPages,
-  totalItems,
-  perPage,
+  paginator,
   onPageChange,
   onPerPageChange,
   label = 'Items',
 }: PaginatorProps) {
-  const startIndex =
-    totalItems === 0
-      ? 0
-      : (currentPage - 1) * perPage + 1
-
-  const endIndex = Math.min(
-    currentPage * perPage,
-    totalItems,
-  )
+  const { current_page: currentPage, last_page: totalPages, total: totalItems, per_page: perPage, from, to, } = paginator
 
   const pageNumbers = getPageNumbers({
     totalPages,
@@ -38,8 +37,8 @@ export function Paginator({
   return (
     <div className="flex items-center justify-between">
       {/* Showing */}
-      <p className="text-sm text-zinc-500">
-        Showing {startIndex} to {endIndex} of {totalItems}{' '}
+      <p className="text-xs text-zinc-500">
+        Showing {from ?? 0} to {to ?? 0} of {totalItems}{' '}
         {label}
       </p>
 
@@ -100,10 +99,11 @@ export function Paginator({
                 key={page}
                 type="button"
                 onClick={() => onPageChange(page)}
-                className={`rounded-md px-3 py-1.5 text-sm ${currentPage === page
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  currentPage === page
                     ? 'bg-green-700 text-white'
                     : 'border hover:bg-zinc-100'
-                  }`}
+                }`}
               >
                 {page}
               </button>

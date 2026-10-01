@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\StudentBank;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateStudentRequest extends FormRequest
+class UpdateStudentBankRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,35 +23,36 @@ class UpdateStudentRequest extends FormRequest
      */
     public function rules(): array
     {
-        $student = $this->route('student');
+        $bank = $this->route('student_bank');
 
         return [
-            'classroom_id' => [
-                'sometimes',
-                'required',
-                'integer',
-                'exists:classrooms,id',
-            ],
-
-            'name' => [
-                'sometimes',
+            'student_code' => [
+                'bail',
                 'required',
                 'string',
-                'max:255',
+                'exists:students,student_code',
+                Rule::unique('student_banks', 'student_code')
+                    ->ignore($bank->id),
             ],
 
-            'email' => [
-                'sometimes',
+            'student_name' => [
                 'required',
-                'email',
-                Rule::unique('students', 'email')
-                    ->ignore($student->id),
+                'string',
             ],
 
-            'phone' => [
-                'sometimes',
+            'father_name' => [
+                'required',
                 'string',
-                'max:12',
+            ],
+
+            'grade' => [
+                'required',
+                'string',
+            ],
+
+            'balance' => [
+                'required',
+                'decimal:0,2',
             ],
         ];
     }

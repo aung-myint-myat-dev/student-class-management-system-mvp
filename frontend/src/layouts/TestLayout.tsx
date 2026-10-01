@@ -6,7 +6,7 @@ export function TestLayout() {
       <div className="w-65 bg-green-700">
         sidebar
       </div>
-      <div className="p-2 flex-1">
+      <div className="p-2 flex-1 overflow-auto">
         <Outlet/>
       </div>
     </div>

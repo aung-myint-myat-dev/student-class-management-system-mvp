@@ -31,7 +31,7 @@ export function DeleteConfirmationDialog({
       />
 
       {/* Dialog */}
-      <div className="relative flex flex-col items-center z-10 w-max rounded-xl border border-zinc-200 bg-white p-6 shadow-xl">
+      <div className="relative flex flex-col items-center z-10 w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-xl">
         {/* Close */}
         <button
           type="button"

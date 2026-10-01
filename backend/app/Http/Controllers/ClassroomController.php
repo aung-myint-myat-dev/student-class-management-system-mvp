@@ -22,7 +22,7 @@ class ClassroomController extends Controller
             ->paginate(
                 perPage: $request->integer('per_page', 10)
             );
-        
+
         return ClassroomResource::collection($classrooms);
     }
 
@@ -33,6 +33,7 @@ class ClassroomController extends Controller
         StoreClassroomRequest $request,
     ) {
         $classroom = Classroom::create($request->validated());
+
         return new ClassroomResource($classroom->load('students'));
     }
 
@@ -52,6 +53,7 @@ class ClassroomController extends Controller
         Classroom $classroom,
     ) {
         $classroom->update($request->validated());
+
         return new ClassroomResource($classroom->refresh()->load('students'));
     }
 
@@ -60,12 +62,13 @@ class ClassroomController extends Controller
      */
     public function destroy(Classroom $classroom)
     {
-        if($classroom->students()->exists()) {
+        if ($classroom->students()->exists()) {
             return response()->json([
                 'message' => 'Students register this class. Cannot delete.',
             ], 409);
         }
         $classroom->delete();
+
         return response()->noContent();
     }
 }

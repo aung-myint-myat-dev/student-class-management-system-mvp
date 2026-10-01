@@ -27,7 +27,7 @@ class StoreClassroomRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-            ]
+            ],
         ];
     }
 }

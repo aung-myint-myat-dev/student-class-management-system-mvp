@@ -2,152 +2,133 @@ import {
   Plus,
   Search,
 } from 'lucide-react'
-import { useState } from 'react'
-import {
-  student_banks,
-  type StudentBank,
-} from './data/student-banks'
+import { useEffect, useState } from 'react'
 import { PageHeader } from './components/page-header'
-import { Paginator } from './components/paginator'
+import { Paginator, type LaravelPaginator } from './components/paginator'
 import { Button } from './components/ui/buttom'
 import { DeleteConfirmationDialog } from './components/delete-confirmation-dialog'
-import { BankAction } from './components/bank-actions'
 import { BanksTable } from './components/banks-table'
+import { api } from '@/lib/api'
+import type { _studentBankSchema } from './data/schema'
+import { BankAction } from './components/bank-actions'
 
 export function StudentBanks() {
-  // --------------------------------------------------
-  // Bank Data
-  // --------------------------------------------------
-  const [banks, setBanks] = useState<StudentBank[]>(student_banks)
-
-  // --------------------------------------------------
-  // Search
-  // --------------------------------------------------
+  const [banks, setBanks] = useState<_studentBankSchema[]>([])
+  const [loading, setLoading] = useState(false)
+  const [paginator, setPaginator] = useState<LaravelPaginator<_studentBankSchema> | null>(null)
   const [searchInput, setSearchInput] = useState('')
-
-  // --------------------------------------------------
-  // Selected Bank
-  // --------------------------------------------------
-  const [selectedBank, setSelectedBank] = useState<StudentBank | null>(null)
-
-  // --------------------------------------------------
-  // Dialog State
-  // --------------------------------------------------
-  const [showBankAction, setShowBankAction] = useState(false)
+  const [selectedBank, setSelectedBank] = useState<_studentBankSchema | null>(null)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
-  const [isEdit, setIsEdit] = useState(false)
+  const [showActionForm, setShowActionForm] = useState<boolean>(false)
+  const [isEdit, setIsEdit] = useState<boolean>(false)
 
-  // --------------------------------------------------
-  // Search
-  // --------------------------------------------------
-  const filteredStudentBanks = banks.filter((bank) => {
-    const searchValue = searchInput.trim().toLowerCase()
-    return (
-      bank.studentCode.toLowerCase().includes(searchValue) ||
-      bank.name.toLowerCase().includes(searchValue)
-    )
-  },
-  )
-
-  // --------------------------------------------------
-  // Pagination
-  // --------------------------------------------------
   const [currentPage, setCurrentPage] = useState(1)
-  const [perPage, setPerPage] = useState(5)
-  const totalItems = filteredStudentBanks.length
-  const totalPages = Math.ceil(totalItems / perPage)
-  const paginatedStudentBanks = filteredStudentBanks.slice((currentPage - 1) * perPage, currentPage * perPage,)
+  const [perPage, setPerPage] = useState(10)
 
-  // --------------------------------------------------
-  // Search Handler
-  // --------------------------------------------------
-  const handleSearchInput = ( event: React.ChangeEvent<HTMLInputElement>, ) => {
-    setSearchInput(event.target.value)
+  const fetchBanks = async (page = currentPage, limit = perPage, search = searchInput,) => {
+    try {
+      setLoading(true)
+      const res = await api.get('/student-banks', {
+        params: {
+          page,
+          per_page: limit,
+          search: search.trim() || undefined,
+        },
+      })
+
+      const paginatorData = res.data.meta as LaravelPaginator<_studentBankSchema>
+
+      setBanks(res.data.data)
+      setPaginator(paginatorData)
+    } catch (error) {
+      console.error('Failed to fetch student banks:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBanks()
+  }, [currentPage, perPage])
+
+  console.log(paginator)
+  const handleSearchInput = (event: React.ChangeEvent<HTMLInputElement>,) => {
+    const value = event.target.value
+    setSearchInput(value)
     setCurrentPage(1)
   }
 
-  // --------------------------------------------------
-  // Create Bank
-  // --------------------------------------------------
-  const handleCreateBank = () => {
-    setSelectedBank(null)
-    setIsEdit(false)
-    setShowBankAction(true)
-  }
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchBanks(1, perPage, searchInput)
+    }, 400)
+    return () => clearTimeout(timeout)
+  }, [searchInput])
 
-  // --------------------------------------------------
-  // Edit Bank
-  // --------------------------------------------------
-  const handleEditBank = ( bank: StudentBank, ) => {
+  const handleEditBank = (
+    bank: _studentBankSchema,
+  ) => {
     setSelectedBank(bank)
-    setIsEdit(true)
-    setShowBankAction(true)
-  }
 
-  // --------------------------------------------------
-  // Create and update bank
-  // --------------------------------------------------
-  const handleBankSave = ( bank: StudentBank, ) => {
-    setBanks((prev) => {
-      if (isEdit) {
-        return prev.map((item) => item.studentCode === bank.studentCode ? bank : item)
-      }
-      return [...prev, bank]
-    })
-    closeBankAction()
-  }
-
-  // --------------------------------------------------
-  // Close Create / Edit
-  // --------------------------------------------------
-  const closeBankAction = () => {
-    setShowBankAction(false)
-    setSelectedBank(null)
-    setIsEdit(false)
+    // Edit dialog logic here
   }
 
   // --------------------------------------------------
   // Open Delete Confirmation
   // --------------------------------------------------
+  const handleDeleteBank = (code: string) => {
+    const bank = banks.find(
+      (item) => item.student_code === code,
+    )
 
-  const handleDeleteBank = ( code: string, ) => {
-    const bank = banks.find( (item) => item.studentCode === code, )
     if (!bank) {
       return
     }
+
     setSelectedBank(bank)
     setShowDeleteConfirmation(true)
   }
 
-  // --------------------------------------------------
-  // Delete Bank
-  // --------------------------------------------------
-  const deleteBank = () => {
+  const handleShowActionForm = () => {
+    setShowActionForm(true)
+    setSelectedBank(null)
+  }
+
+  const deleteBank = async () => {
     if (!selectedBank) {
       return
     }
 
-    setBanks((prev) =>
-      prev.filter( (bank) => bank.studentCode !== selectedBank.studentCode, ),
-    )
+    try {
+      await api.delete(
+        `/student-banks/${selectedBank.student_code}`,
+      )
+      setSelectedBank(null)
+      setShowDeleteConfirmation(false)
+      await fetchBanks()
 
-    setSelectedBank(null)
-    setShowDeleteConfirmation(false)
+      if (
+        paginator &&
+        paginator.current_page > 1 &&
+        paginator.data.length === 1
+      ) {
+        setCurrentPage((prev) => prev - 1)
+      }
 
-    // Current page မှာ item မရှိတော့ရင်
-    // previous page ကို ပြန်သွား
-    if (
-      paginatedStudentBanks.length === 1 &&
-      currentPage > 1
-    ) {
-      setCurrentPage((prev) => prev - 1)
+    } catch (error) {
+      console.error('Failed to delete student bank:', error)
     }
   }
 
   return (
     <div className="flex flex-col gap-4 rounded-md p-2 shadow-sm">
+
       {/* Header */}
-      <PageHeader />
+      <PageHeader
+        isDetail={false}
+        title="Student Bank Accounts"
+        des="You can see your student bank accounts list here."
+      />
 
       {/* Table Action */}
       <div className="flex items-center justify-between gap-4">
@@ -158,7 +139,7 @@ export function StudentBanks() {
             type="text"
             value={searchInput}
             onChange={handleSearchInput}
-            placeholder="Search by name, id"
+            placeholder="Search by name or student code..."
             className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
           />
 
@@ -168,44 +149,53 @@ export function StudentBanks() {
         {/* Add */}
         <Button
           icon={Plus}
-          onClick={handleCreateBank}
+          onClick={handleShowActionForm}
         >
-          Add New Bank
+          Add New Account
         </Button>
       </div>
 
       {/* Table */}
-      <BanksTable
-        banks={paginatedStudentBanks}
-        onEditBank={handleEditBank}
-        onDeleteBank={handleDeleteBank}
-      />
+      {loading ? (
+        <div className="py-10 text-center text-sm text-zinc-500">
+          Loading student bank accounts...
+        </div>
+      ) : banks.length === 0 ? (
+        <div className="py-10 text-center text-sm text-zinc-500">
+          No student bank accounts found.
+        </div>
+      ) : (
+        <BanksTable
+          banks={banks}
+          onEditBank={handleEditBank}
+          onDeleteBank={handleDeleteBank}
+        />
+      )}
 
       {/* Pagination */}
-      <Paginator
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        perPage={perPage}
-        onPageChange={setCurrentPage}
-        onPerPageChange={(value) => {
-          setPerPage(value)
-          setCurrentPage(1)
-        }}
-        label="Students"
-      />
+      {paginator && (
+        <Paginator
+          paginator={paginator}
+          onPageChange={(page) => {
+            setCurrentPage(page)
+          }}
+          onPerPageChange={(value) => {
+            setPerPage(value)
+            setCurrentPage(1)
+          }}
+          label="Student Bank Accounts"
+        />
+      )}
 
-      
-      {/* Bank Action Dialog */}
       <BankAction
-        open={showBankAction}
-        setOpen={closeBankAction}
-        isEdit={isEdit}
+        open={showActionForm}
+        setOpen={setShowActionForm}
         selectedBank={selectedBank}
-        onSave={handleBankSave}
+        isEdit={isEdit}
+        onSave={() => console.log('helo')}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <DeleteConfirmationDialog
         open={showDeleteConfirmation}
         onClose={() => {
@@ -216,7 +206,7 @@ export function StudentBanks() {
         title="Delete bank?"
         description={
           selectedBank
-            ? `Are you sure you want to delete the bank record for ${selectedBank.name}? This action cannot be undone.`
+            ? `Are you sure you want to delete the bank record for ${selectedBank.student_name}? This action cannot be undone.`
             : undefined
         }
       />

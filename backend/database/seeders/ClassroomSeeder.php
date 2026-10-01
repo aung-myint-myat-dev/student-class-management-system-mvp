@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Classroom;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ClassroomSeeder extends Seeder
@@ -24,6 +23,16 @@ class ClassroomSeeder extends Seeder
             ['name' => 'Grade 4 - B'],
             ['name' => 'Grade 5 - A'],
             ['name' => 'Grade 5 - B'],
+            ['name' => 'Grade 6 - A'],
+            ['name' => 'Grade 6 - B'],
+            ['name' => 'Grade 7 - A'],
+            ['name' => 'Grade 7 - B'],
+            ['name' => 'Grade 8 - A'],
+            ['name' => 'Grade 8 - B'],
+            ['name' => 'Grade 9 - A'],
+            ['name' => 'Grade 9 - B'],
+            ['name' => 'Grade 10 - A'],
+            ['name' => 'Grade 10 - B'],
         ];
 
         foreach ($classrooms as $classroom) {

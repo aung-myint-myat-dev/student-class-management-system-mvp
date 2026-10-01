@@ -25,6 +25,21 @@ class StudentController extends Controller
         return StudentResource::collection($students);
     }
 
+    public function findByCode(
+        string $student_code
+    ) {
+        $student = Student::where('student_code', $student_code)->get();
+        if(!$student) {
+            return response()->json(
+                [
+                    'message' => 'error'
+                ]
+            );
+        }
+        return new StudentResource($student);
+    }
+    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -32,6 +47,7 @@ class StudentController extends Controller
         StoreStudentRequest $request
     ) {
         $student = Student::create($request->validated());
+
         return new StudentResource($student->load('classroom'));
     }
 
@@ -52,6 +68,7 @@ class StudentController extends Controller
         Student $student
     ) {
         $student->update($request->validated());
+
         return new StudentResource($student->refresh()->load('classroom'));
     }
 
@@ -61,6 +78,7 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         $student->delete();
+
         return response()->noContent();
     }
 }

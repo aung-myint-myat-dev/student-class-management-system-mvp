@@ -3,6 +3,7 @@ import { Save, Search, X, XIcon } from 'lucide-react'
 import { students, type Student } from '../data/students'
 import type { StudentBank } from '../data/student-banks'
 import { Button } from './ui/buttom'
+import { api } from '@/lib/api'
 
 type FormData = {
   amountType: 'credit' | 'debit' | ''
@@ -46,21 +47,21 @@ export function BankAction({
     }
 
     if (isEdit && selectedBank) {
-      const student = students.find(
-        (student) =>
-          student.studentCode.toLowerCase() ===
-          selectedBank.studentCode.toLowerCase(),
-      )
+      // const student = students.find(
+      //   (student) =>
+      //     student.studentCode.toLowerCase() ===
+      //     selectedBank.studentCode.toLowerCase(),
+      // )
 
-      setStudentCode(selectedBank.studentCode)
-      setSelectedStudent(student ?? null)
+      // setStudentCode(selectedBank.studentCode)
+      // setSelectedStudent(student ?? null)
 
-      setFormData({
-        amountType: selectedBank.balance < 0 ? 'credit' : 'debit',
-        amount: String(Math.abs(selectedBank.balance)),
-      })
-      setErrors({})
-      return
+      // setFormData({
+      //   amountType: selectedBank.balance < 0 ? 'credit' : 'debit',
+      //   amount: String(Math.abs(selectedBank.balance)),
+      // })
+      // setErrors({})
+      // return
     }
 
     setStudentCode('')
@@ -81,7 +82,7 @@ export function BankAction({
     }))
   }
 
-  const searchStudent = () => {
+  const searchStudent = async () => {
     const code = studentCode.trim().toLowerCase()
 
     if (!code) {
@@ -92,6 +93,10 @@ export function BankAction({
       }))
       return
     }
+
+    const res = await api.get(`students/find/${code}`)
+
+    console.log(res.data.data)
 
     const student = students.find((student) => student.studentCode.toLowerCase() === code,)
 
@@ -148,29 +153,29 @@ export function BankAction({
     }
 
     const amount = Number(formData.amount)
-    const balance = formData.amountType === 'credit' ? amount : -amount
+    const balance = formData.amountType === 'credit' ? -amount : amount
 
-    const bank: StudentBank = {
-      studentCode: selectedStudent.studentCode,
-      name: selectedStudent.name,
-      fatherName: selectedStudent.fatherName,
-      current_grade: selectedStudent.current_grade,
-      balance,
-    }
-    onSave(bank)
+    // const bank: StudentBank = {
+    //   studentCode: selectedStudent.studentCode,
+    //   name: selectedStudent.name,
+    //   fatherName: selectedStudent.fatherName,
+    //   current_grade: selectedStudent.current_grade,
+    //   balance: balance,
+    // }
+    // onSave()
     closeForm()
   }
 
-  useEffect(() => {
-    if (selectedBank) {
-      setSelectedStudent({
-        studentCode: selectedBank.studentCode,
-        name: selectedBank.name,
-        fatherName: selectedBank.fatherName,
-        current_grade: selectedBank.current_grade
-      })
-    }
-  }, [selectedBank])
+  // useEffect(() => {
+  //   if (selectedBank) {
+  //     setSelectedStudent({
+  //       studentCode: selectedBank.studentCode,
+  //       name: selectedBank.name,
+  //       fatherName: selectedBank.fatherName,
+  //       current_grade: selectedBank.current_grade
+  //     })
+  //   }
+  // }, [selectedBank])
 
   if (!open) {
     return null
@@ -193,13 +198,13 @@ export function BankAction({
         <div className="flex items-center justify-between px-6 py-3">
           <div>
             <h2 className="text-xl font-bold text-zinc-900">
-              {isEdit ? 'Edit Bank' : 'Create New Bank'}
+              {isEdit ? 'Edit Account' : 'Create New Account'}
             </h2>
 
             <p className="text-sm text-zinc-500">
               {isEdit
                 ? 'Update the student bank transaction.'
-                : 'Add a transaction to a student bank account.'}
+                : 'Search student and fill the form to create a student bank account.'}
             </p>
           </div>
 
@@ -223,11 +228,11 @@ export function BankAction({
                 htmlFor="student-search"
                 className="text-sm font-semibold text-zinc-800"
               >
-                Search Student
+                {isEdit ? 'Selected' : 'Search'} Student
               </label>
 
               <p className="mt-1 text-xs text-zinc-500">
-                Enter the student code to find a student.
+                {isEdit ? 'Fill in the available inputs.' : 'Enter the student code to find a student.'}
               </p>
             </div>
 
@@ -267,7 +272,6 @@ export function BankAction({
               {!isEdit && (
                 <Button
                   type="button"
-                  variant="secondary"
                   icon={Search}
                   onClick={searchStudent}
                 >
@@ -282,7 +286,7 @@ export function BankAction({
               </p>
             )}
 
-            {selectedStudent && !errors.studentCode && (
+            {selectedStudent && !errors.studentCode && !isEdit && (
               <p className="text-xs text-green-600">
                 Student matched and auto filled successfully.
               </p>
@@ -291,9 +295,11 @@ export function BankAction({
 
           {/* Student Information */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-zinc-800">
+            <h4 className="text-sm font-semibold text-zinc-800">
               Student Information
-            </h3>
+            </h4>
+
+            <p className='text-xs text-zinc-500'>Information will be automatacally filled.</p>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
@@ -354,7 +360,7 @@ export function BankAction({
           {/* Transaction */}
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-zinc-800">
-              Transaction Information
+              Amount Information
             </h3>
 
             {/* Transaction Type */}
@@ -363,7 +369,7 @@ export function BankAction({
                 htmlFor="transaction-type"
                 className="text-sm font-medium text-zinc-700"
               >
-                Transaction Type
+                Opening Amount Type
               </label>
 
               <select
@@ -377,16 +383,16 @@ export function BankAction({
                   }`}
               >
                 <option value="">
-                  Select transaction type
-                </option>
-
-                <option value="credit">
-                  Credit
+                  Select Amount Type
                 </option>
 
                 <option value="debit">
-                  Debit
+                  Debit (+)
                 </option>
+                <option value="credit">
+                  Credit (-)
+                </option>
+
               </select>
 
               {errors.amountType && (
@@ -419,7 +425,7 @@ export function BankAction({
                   value={formData.amount}
                   onChange={handleChange}
                   placeholder="Enter amount"
-                  className="w-full bg-transparent py-2 text-sm outline-none"
+                  className={`w-full bg-transparent py-2 text-sm outline-none ${formData.amountType === 'credit' ? 'text-red-500' : 'text-zinc-950'}`}
                 />
 
                 <span className="text-xs text-zinc-400">

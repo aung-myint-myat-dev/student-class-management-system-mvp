@@ -1,19 +1,10 @@
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import type { StudentBank } from '../data/student-banks'
 import { isCreditBalance } from '../lib/is-credit-balance'
 import { useNavigate } from 'react-router'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
+import type { _studentBankSchema } from '../data/schema'
 interface BanksTableProps {
-  banks: StudentBank[]
-  onEditBank: (bank: StudentBank) => void
+  banks: _studentBankSchema[] | []
+  onEditBank: (bank: _studentBankSchema) => void
   onDeleteBank: (code: string) => void
 }
 export function BanksTable({
@@ -23,92 +14,96 @@ export function BanksTable({
 }: BanksTableProps) {
   const navigate = useNavigate()
   return (
-    <div className="h-full overflow-hidden rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-75 ps-3"> Code </TableHead>
-            <TableHead> Student Name </TableHead>
-            <TableHead> Father's Name </TableHead>
-            <TableHead> Current Grade </TableHead>
-            <TableHead> Balance </TableHead>
-            <TableHead className="pe-3 text-right"> Actions </TableHead>
-          </TableRow>
-        </TableHeader>
+    <div className="overflow-hidden rounded-md border border-zinc-200">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b bg-zinc-50">
+              <th className="px-6 py-2.5 text-left text-sm font-medium text-zinc-700">
+                Student Code
+              </th>
 
-        {/* Table body */}
-        {banks.length > 0 && (
-          <TableBody>
+              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+                Student Name
+              </th>
 
-            {banks.map(
-              (bank) => (
-                <TableRow key={bank.studentCode} >
+              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+                Father Name
+              </th>
 
-                  <TableCell className="ps-3 font-medium"> {bank.studentCode} </TableCell>
-                  <TableCell> {bank.name} </TableCell>
-                  <TableCell> {bank.fatherName} </TableCell>
-                  <TableCell> {bank.current_grade} </TableCell>
-                  <TableCell className={isCreditBalance(bank.balance,) ? 'text-red-500' : 'text-green-500'}>
-                    {bank.balance}
-                  </TableCell>
+              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+                Grade
+              </th>
 
-                  {/* Actions */}
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-3 pe-3">
-                      {/* View */}
+              <th className="px-4 py-2.5 text-right text-sm font-medium text-zinc-700">
+                Balance
+              </th>
+
+              <th className="px-6 py-2.5 text-right text-sm font-medium text-zinc-700">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {banks.map((bank, index) => {
+              const amount = Number(bank.balance).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })
+
+              return (
+                <tr key={index} className="border-b last:border-0 hover:bg-zinc-50">
+                  <td className="px-6 py-3 text-sm text-zinc-600 w-40">
+                    {bank.student_code}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-zinc-600">
+                    {bank.student_name}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-zinc-600">
+                    {bank.father_name}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-zinc-600">
+                    {bank.grade}
+                  </td>
+
+                  <td className={`px-4 py-3 text-right text-sm text-zinc-600`}>
+                    <span className={isCreditBalance(Number(bank.balance)) ? 'text-red-500' : 'text-zinc-600'}>
+                      {/* {bank.balance.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 0 })} MMK */}
+                      {amount} MMK
+                    </span>
+                  </td>
+
+                  <td className="px-6 py-3">
+                    <div className="flex justify-end gap-3">
                       <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            `/student-banks/${bank.studentCode.toLowerCase()}`,
-                          )
-                        }
-                        className="transition-opacity hover:opacity-70"
-                      >
-                        <Eye className="size-4 text-blue-500" />
+                        onClick={() => navigate(`/student-banks/${bank.student_code.toLocaleLowerCase()}`)}
+                        type="button">
+                        <Eye className="size-4 cursor-pointer text-blue-500" />
                       </button>
 
-                      {/* Edit */}
                       <button
-                        type="button"
-                        onClick={() =>
-                          onEditBank(bank)
-                        }
-                        className="transition-opacity hover:opacity-70"
-                      >
-                        <Pencil className="size-4 text-yellow-500" />
+                        onClick={() => onEditBank(bank)}
+                        type="button">
+                        <Pencil className="size-4 cursor-pointer text-yellow-500" />
                       </button>
 
-                      {/* Delete */}
                       <button
-                        type="button"
-                        onClick={() =>
-                          onDeleteBank(
-                            bank.studentCode,
-                          )
-                        }
-                        className="transition-opacity hover:opacity-70"
-                      >
-                        <Trash2 className="size-4 text-red-500" />
+                        onClick={() => onDeleteBank(bank.student_code)}
+                        type="button">
+                        <Trash2 className="size-4 cursor-pointer text-red-500" />
                       </button>
-
                     </div>
-                  </TableCell>
-
-                </TableRow>
-              ),
-            )}
-
-          </TableBody>
-        )}
-
-        {/* No banks */}
-        {banks.length === 0 && (
-          <TableCaption className="mb-4">
-            No banks found.
-          </TableCaption>
-        )}
-      </Table>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
