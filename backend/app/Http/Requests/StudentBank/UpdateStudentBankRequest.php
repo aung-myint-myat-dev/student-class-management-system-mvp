@@ -23,7 +23,7 @@ class UpdateStudentBankRequest extends FormRequest
      */
     public function rules(): array
     {
-        $bank = $this->route('student_bank');
+        $id = $this->route('student_bank');
 
         return [
             'student_code' => [
@@ -32,7 +32,7 @@ class UpdateStudentBankRequest extends FormRequest
                 'string',
                 'exists:students,student_code',
                 Rule::unique('student_banks', 'student_code')
-                    ->ignore($bank->id),
+                    ->ignore($id),
             ],
 
             'student_name' => [
@@ -47,6 +47,16 @@ class UpdateStudentBankRequest extends FormRequest
 
             'grade' => [
                 'required',
+                'string',
+            ],
+
+            'opening_amount_type' => [
+                'required',
+                'string',
+            ],
+
+            'payment_method' => [
+                'nullable',
                 'string',
             ],
 

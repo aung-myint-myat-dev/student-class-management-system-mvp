@@ -11,7 +11,6 @@ import { BanksTable } from './components/banks-table'
 import { api } from '@/lib/api'
 import type { _studentBankSchema } from './data/schema'
 import { BankAction } from './components/bank-actions'
-import { AxiosError } from 'axios'
 
 export function StudentBanks() {
   const [banks, setBanks] = useState<_studentBankSchema[]>([])
@@ -22,10 +21,10 @@ export function StudentBanks() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [showActionForm, setShowActionForm] = useState<boolean>(false)
   const [isEdit, setIsEdit] = useState<boolean>(false)
-
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
 
+  // Banks fetch function
   const fetchBanks = async (page = currentPage, limit = perPage, search = searchInput,) => {
     try {
       setLoading(true)
@@ -33,12 +32,10 @@ export function StudentBanks() {
         params: {
           page,
           per_page: limit,
-          search: search.trim() || undefined,
+          student_code: search.trim(),
         },
       })
-
       const paginatorData = res.data.meta as LaravelPaginator<_studentBankSchema>
-
       setBanks(res.data.data)
       setPaginator(paginatorData)
     } catch (error) {
@@ -55,29 +52,29 @@ export function StudentBanks() {
   }
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      fetchBanks(1, perPage, searchInput)
-    }, 400)
-    return () => clearTimeout(timeout)
+    const search = searchInput.trim()
+    if (search) {
+      const timeout = setTimeout(() => {
+        fetchBanks(currentPage, perPage, search)
+      }, 500)
+      return () => clearTimeout(timeout)
+    }
+    fetchBanks(currentPage, perPage)
   }, [searchInput, currentPage, perPage])
 
-  const handleEditBank = (
-    bank: _studentBankSchema,
-  ) => {
+  const handleEditBank = (bank: _studentBankSchema,) => {
     setSelectedBank(bank)
-
-    // Edit dialog logic here
+    setIsEdit(true)
+    setShowActionForm(true)
   }
 
   const handleDeleteBank = (code: string) => {
     const bank = banks.find(
       (item) => item.student_code === code,
     )
-
     if (!bank) {
       return
     }
-
     setSelectedBank(bank)
     setShowDeleteConfirmation(true)
   }
@@ -85,18 +82,12 @@ export function StudentBanks() {
   const handleShowActionForm = () => {
     setShowActionForm(true)
     setSelectedBank(null)
+    setIsEdit(false)
   }
 
-  const submitForm = async (payload: any) => {
-    try {
-      await api.post('/student-banks', payload)
-      fetchBanks(1, perPage, searchInput)
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 422) {
-        const errors = error.response.data
-        console.log("post error: ", errors)
-      }
-    }
+  const closeActionForm = () => {
+    setShowActionForm(false)
+    setSelectedBank(null)
   }
 
   const deleteBank = async () => {
@@ -145,7 +136,6 @@ export function StudentBanks() {
             placeholder="Search by name or student code..."
             className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
           />
-
           <Search className="size-4 text-zinc-500" />
         </div>
 
@@ -192,10 +182,13 @@ export function StudentBanks() {
 
       <BankAction
         open={showActionForm}
-        setOpen={setShowActionForm}
+        onClose={closeActionForm}
         selectedBank={selectedBank}
         isEdit={isEdit}
-        onSave={submitForm}
+        onAfterSubmit={() => {
+          fetchBanks(1, perPage, searchInput)
+          closeActionForm()
+        }}
       />
 
       {/* Delete Confirmation */}

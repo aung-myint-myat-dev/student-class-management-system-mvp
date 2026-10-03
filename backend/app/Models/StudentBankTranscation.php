@@ -15,10 +15,12 @@ class StudentBankTranscation extends Model
         'amount',
         'description',
         'payment_method',
+        'remaing_balance',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'remaing_balance' => 'decimal:2'
     ];
 
     public function bank(): BelongsTo

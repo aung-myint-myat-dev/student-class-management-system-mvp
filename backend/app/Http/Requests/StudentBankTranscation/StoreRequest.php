@@ -25,9 +25,10 @@ class StoreRequest extends FormRequest
         return [
             'student_bank_id' => ['required', 'exists:student_banks,id'],
             'transcation_type' => ['required', 'string'],
+            'payment_method' => ['nullable', 'string'],
             'date' => ['required', 'date'],
             'amount' => ['required', 'decimal:0,2'],
-            'description' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:100'],
             'images' => ['nullable', 'array', 'max:5'],
             'imeages.*' => ['nullable', 'image', 'mimes:png,jpg', 'max:2024']
         ];

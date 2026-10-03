@@ -46,8 +46,13 @@ class StoreStudentBankRequest extends FormRequest
                 'string',
             ],
 
-            'amount_type' => [
+            'opening_amount_type' => [
                 'required',
+                'string',
+            ],
+
+            'payment_method' => [
+                'nullable',
                 'string',
             ],
 

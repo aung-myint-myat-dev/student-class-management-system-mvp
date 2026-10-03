@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('amount', 10);
             $table->string('description')->nullable();
             $table->string('payment_method')->nullable();
+            $table->decimal('remaing_balance', 10, 2)->nullable();
             $table->timestamps();
         });
     }

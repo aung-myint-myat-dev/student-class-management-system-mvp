@@ -1,175 +1,231 @@
 import { useEffect, useState } from 'react'
 import { Save, Search, X, XIcon } from 'lucide-react'
-import type { StudentBank } from '../data/student-banks'
 import { Button } from './ui/buttom'
 import { api } from '@/lib/api'
-import type { _studentSchema } from '../data/schema'
-
-type FormData = {
-  amountType: 'credit' | 'debit' | ''
-  amount: string
-}
-
-type FormErrors = {
-  studentCode?: string
-  amountType?: string
-  amount?: string
-}
+import type { _studentBankSchema, _studentSchema } from '../data/schema'
+import type { StudentBankActionFormErrorType, StudentBankActionFormType, } from '../types'
+import { AxiosError } from 'axios'
 
 interface BankActionProps {
   open: boolean
-  setOpen: (value: boolean) => void
-  isEdit?: boolean
-  selectedBank: StudentBank | null
-  onSave: (payload: any) => void
+  isEdit: boolean
+  selectedBank: _studentBankSchema | null
+  onClose: () => void
+  onAfterSubmit: () => void
 }
 
-const emptyFormData: FormData = {
-  amountType: '',
-  amount: '',
-}
+const createEmptyForm = (): StudentBankActionFormType => ({
+  student_code: '',
+  student_name: '',
+  father_name: '',
+  grade: '',
+  balance: 0,
+  payment_method: 'cash',
+  opening_amount_type: 'debit',
+})
+
+const createEmptyErrors = (): StudentBankActionFormErrorType => ({
+  student_code: '',
+  student_name: '',
+  father_name: '',
+  grade: '',
+  balance: '',
+  payment_method: '',
+  opening_amount_type: '',
+})
 
 export function BankAction({
   open,
-  setOpen,
+  isEdit,
   selectedBank,
-  isEdit = false,
-  onSave,
+  onClose,
+  onAfterSubmit,
 }: BankActionProps) {
-  const [studentCode, setStudentCode] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState<_studentSchema | null>(null)
-  const [formData, setFormData] = useState<FormData>(emptyFormData)
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [formData, setFormData] = useState<StudentBankActionFormType>(createEmptyForm)
+  const [errors, setErrors] = useState<StudentBankActionFormErrorType>(createEmptyErrors)
+  const [searchedStudent, setSearchedStudent] = useState<_studentSchema | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
+  // Reset initial form
   useEffect(() => {
     if (!open) {
       return
     }
 
+    setErrors(createEmptyErrors())
+    setSearchedStudent(null)
+
     if (isEdit && selectedBank) {
-      // const student = students.find(
-      //   (student) =>
-      //     student.studentCode.toLowerCase() ===
-      //     selectedBank.studentCode.toLowerCase(),
-      // )
-
-      // setStudentCode(selectedBank.studentCode)
-      // setSelectedStudent(student ?? null)
-
-      // setFormData({
-      //   amountType: selectedBank.balance < 0 ? 'credit' : 'debit',
-      //   amount: String(Math.abs(selectedBank.balance)),
-      // })
-      // setErrors({})
-      // return
+      const editForm: StudentBankActionFormType = {
+        student_code: selectedBank.student_code,
+        student_name: selectedBank.student_name,
+        father_name: selectedBank.father_name,
+        grade: selectedBank.grade,
+        balance: selectedBank.balance,
+        payment_method: selectedBank.payment_method,
+        opening_amount_type: selectedBank.opening_amount_type ?? 'debit',
+      }
+      setFormData(editForm)
+      searchStudentByCode(selectedBank.student_code)
+      return
     }
 
-    setStudentCode('')
-    setSelectedStudent(null)
-    setFormData(emptyFormData)
-    setErrors({})
+    setFormData(createEmptyForm())
   }, [open, isEdit, selectedBank])
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Search Student
+  const searchStudentByCode = async (studentCode: string) => {
+    const code = studentCode.trim()
+    if (!code) {
+      setSearchedStudent(null)
+      setErrors((prev) => ({
+        ...prev,
+        student_code: 'Student code is required.',
+      }))
+      return
+    }
+
+    try {
+      setIsSearching(true)
+      const res = await api.get('students', {
+        params: {
+          search: code,
+        },
+      })
+      const student: _studentSchema | undefined = res.data.data?.[0]
+      if (!student) {
+        setSearchedStudent(null)
+        setErrors((prev) => ({
+          ...prev,
+          student_code: 'Student not found.',
+        }))
+        return
+      }
+      setSearchedStudent(student)
+      setFormData((prev) => ({
+        ...prev,
+        student_code: student.student_code ?? code,
+        student_name: student.name,
+        father_name: student.father_name,
+        grade: student.class.name,
+      }))
+      setErrors((prev) => ({
+        ...prev,
+        student_code: '',
+      }))
+    } catch (error) {
+      console.error('Failed to search student:', error)
+      setSearchedStudent(null)
+      setErrors((prev) => ({
+        ...prev,
+        student_code: 'Failed to search student.',
+      }))
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleSearch = () => {
+    searchStudentByCode(formData.student_code)
+  }
+
+  // Form Change
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,) => {
     const { name, value } = event.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]:
+        name === 'balance'
+          ? Number(value)
+          : value,
     }))
+
     setErrors((prev) => ({
       ...prev,
       [name]: '',
     }))
   }
 
-  const searchStudent = async () => {
-    const code = studentCode.trim()
-    if (!code) {
-      setSelectedStudent(null)
-      setErrors((prev) => ({
-        ...prev,
-        studentCode: 'Student code is required.',
-      }))
-      return
-    }
-    const res = await api.get(`students?search=${code}`)
-    const student = res.data.data[0]
-    if (!student) {
-      setSelectedStudent(null)
-      setErrors((prev) => ({
-        ...prev,
-        studentCode: 'Student not found.',
-      }))
-      return
-    }
-    if(student) {
-      setSelectedStudent(student)
-    }
-    setErrors((prev) => ({
-      ...prev,
-      studentCode: '',
-    }))
-  }
-
+  // Validation form
   const validate = () => {
-    const newErrors: FormErrors = {}
+    const newErrors = createEmptyErrors()
 
-    if (!selectedStudent) {
-      newErrors.studentCode =
-        'Please search and select a student.'
+    if (!searchedStudent) {
+      newErrors.student_code = 'Please search and select a student.'
     }
 
-    if (!formData.amountType) {
-      newErrors.amountType =
-        'Transaction type is required.'
+    if (!formData.opening_amount_type) {
+      newErrors.opening_amount_type =
+        'Opening amount type is required.'
     }
 
-    if (!formData.amount.trim()) {
-      newErrors.amount = 'Amount is required.'
-    } else if (Number(formData.amount) <= 0) {
-      newErrors.amount =
-        'Amount must be greater than 0.'
+    if (!formData.balance || Number(formData.balance) <= 0) {
+      newErrors.balance = 'Amount must be greater than 0.'
     }
+
+    const hasErrors = Object.values(newErrors).some(
+      (error) => Boolean(error),
+    )
 
     setErrors(newErrors)
 
-    return Object.keys(newErrors).length === 0
+    return !hasErrors
   }
 
-  const closeForm = () => {
-    setOpen(false)
-  }
-
-  const submitForm = () => {
-    if (!validate() || !selectedStudent) {
+  // SubmitForm
+  const submitForm = async () => {
+    if (!validate() || !searchedStudent) {
       return
     }
 
-    const amount = Number(formData.amount)
-    const balance = formData.amountType === 'credit' ? -amount : amount
-
-    const payload = {
-      student_code: studentCode,
-      student_name: selectedStudent.name,
-      father_name: selectedStudent.father_name,
-      grade: selectedStudent.class.name,
-      amount_type: formData.amountType,
-      balance: balance,
+    const amount = Math.abs(Number(formData.balance))
+    const payload: StudentBankActionFormType = {
+      student_code: formData.student_code,
+      student_name: searchedStudent.name,
+      father_name: searchedStudent.father_name,
+      grade: searchedStudent.class.name,
+      opening_amount_type: formData.opening_amount_type,
+      payment_method: formData.payment_method,
+      balance: formData.opening_amount_type === 'credit' ? -amount : amount,
     }
-    onSave(payload)
-    closeForm()
+
+    try {
+      setIsSaving(true)
+
+      if (isEdit && selectedBank) {
+        console.log(selectedBank)
+        await api.put(`student-banks/${selectedBank.id}`, payload)
+      } else {
+        await api.post('/student-banks', payload)
+      }
+
+      onAfterSubmit()
+    } catch (error) {
+
+      if (error instanceof AxiosError && error.response?.status === 422) {
+        const errors = error.response.data.errors
+
+        Object.entries(errors).forEach(([field, message]) => {
+          setErrors((prev) => ({
+            ...prev,
+            [field]: Array.isArray(message) ? message[0] : String(message)
+          }))
+        })
+      }
+
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  // useEffect(() => {
-  //   if (selectedBank) {
-  //     setSelectedStudent({
-  //       studentCode: selectedBank.studentCode,
-  //       name: selectedBank.name,
-  //       fatherName: selectedBank.fatherName,
-  //       current_grade: selectedBank.current_grade
-  //     })
-  //   }
-  // }, [selectedBank])
+  const handleClose = () => {
+    if (isSaving) { return }
+    setFormData(createEmptyForm())
+    setErrors(createEmptyErrors())
+    setSearchedStudent(null)
+    onClose()
+  }
 
   if (!open) {
     return null
@@ -181,13 +237,13 @@ export function BankAction({
       <button
         type="button"
         aria-label="Close form"
-        onClick={closeForm}
+        onClick={handleClose}
+        disabled={isSaving}
         className="absolute inset-0 cursor-default"
       />
 
       {/* Form */}
       <div className="relative flex h-full w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
-
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3">
           <div>
@@ -204,8 +260,9 @@ export function BankAction({
 
           <button
             type="button"
-            onClick={closeForm}
-            className="flex size-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="flex size-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
             aria-label="Close"
           >
             <X className="size-5" />
@@ -215,7 +272,7 @@ export function BankAction({
         {/* Content */}
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-3">
 
-          {/* Student Search */}
+          {/* Search Student */}
           <section className="space-y-3">
             <div>
               <label
@@ -226,13 +283,15 @@ export function BankAction({
               </label>
 
               <p className="mt-1 text-xs text-zinc-500">
-                {isEdit ? 'Fill in the available inputs.' : 'Enter the student code to find a student.'}
+                {isEdit
+                  ? 'Student information is loaded from the student record.'
+                  : 'Enter the student code to find a student.'}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <div
-                className={`flex h-9 flex-1 items-center rounded-full border bg-white px-3 transition-colors duration-200 ${errors.studentCode
+                className={`relative flex h-9 flex-1 items-center rounded-full border bg-white px-3 transition-colors duration-200 ${errors.student_code
                   ? 'border-red-400 focus-within:border-red-500'
                   : 'border-zinc-300 focus-within:border-zinc-500'
                   }`}
@@ -240,51 +299,48 @@ export function BankAction({
                 <input
                   id="student-search"
                   type="text"
-                  value={studentCode}
-                  disabled={isEdit}
+                  value={formData.student_code}
+                  disabled={isSearching || isSaving}
                   onChange={(e) => {
-                    setStudentCode(e.target.value)
+                    setFormData((prev) => ({
+                      ...prev,
+                      student_code: e.target.value,
+                    }))
 
-                    if (errors.studentCode) {
+                    setSearchedStudent(null)
+
+                    if (errors.student_code) {
                       setErrors((prev) => ({
                         ...prev,
-                        studentCode: '',
+                        student_code: '',
                       }))
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      searchStudent()
+                      handleSearch()
                     }
                   }}
                   placeholder="e.g. STU-0011"
                   className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:text-zinc-500"
                 />
+                {errors.student_code && (
+                  <p className="text-xs text-red-500 absolute -bottom-6 left-0">
+                    {errors.student_code}
+                  </p>
+                )}
               </div>
 
-              {!isEdit && (
-                <Button
-                  type="button"
-                  icon={Search}
-                  onClick={searchStudent}
-                >
-                  Search
-                </Button>
-              )}
+              <Button
+                type="button"
+                icon={Search}
+                onClick={handleSearch}
+                disabled={isSearching || isSaving}
+              >
+                {isSearching ? 'Searching...' : 'Search'}
+              </Button>
             </div>
-
-            {errors.studentCode && (
-              <p className="text-xs text-red-500">
-                {errors.studentCode}
-              </p>
-            )}
-
-            {selectedStudent && !errors.studentCode && !isEdit && (
-              <p className="text-xs text-green-600">
-                Student matched and auto filled successfully.
-              </p>
-            )}
           </section>
 
           {/* Student Information */}
@@ -293,27 +349,30 @@ export function BankAction({
               Student Information
             </h4>
 
-            <p className='text-xs text-zinc-500'>Information will be automatacally filled.</p>
+            <p className="text-xs text-zinc-500">
+              Information will be automatically filled.
+            </p>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
+              {/* Name */}
               <div className="space-y-1.5">
                 <label
-                  htmlFor="name"
-                  className="text-sm font-medium text-zinc-600"
+                  htmlFor="student-name"
+                  className="text-sm font-medium text-zinc-500"
                 >
                   Name
                 </label>
 
                 <input
-                  id="name"
-                  value={selectedStudent?.name ?? ''}
+                  id="student-name"
+                  value={formData.student_name}
                   disabled
                   placeholder="Student name"
-                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"
+                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-950 outline-none"
                 />
               </div>
 
+              {/* Father Name */}
               <div className="space-y-1.5">
                 <label
                   htmlFor="father-name"
@@ -324,76 +383,94 @@ export function BankAction({
 
                 <input
                   id="father-name"
-                  value={selectedStudent?.father_name ?? ''}
+                  value={formData.father_name}
                   disabled
                   placeholder="Father name"
-                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"
+                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-950 outline-none"
                 />
               </div>
 
-              <div className="col-span-2 space-y-1.5">
+              {/* Grade */}
+              <div className="space-y-1.5 sm:col-span-2">
                 <label
                   htmlFor="current-grade"
-                  className="text-sm font-medium text-zinc-600"
+                  className="text-sm font-medium text-zinc-500"
                 >
                   Current Grade
                 </label>
 
                 <input
                   id="current-grade"
-                  value={selectedStudent?.class.name ?? ''}
+                  value={formData.grade}
                   disabled
                   placeholder="Current Grade"
-                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-600 outline-none"
+                  className="w-full cursor-not-allowed rounded-md border bg-zinc-50 px-3 py-2 text-sm text-zinc-950 outline-none"
                 />
               </div>
-
             </div>
           </section>
 
-          {/* Transaction */}
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-zinc-800">
               Amount Information
             </h3>
 
-            {/* Transaction Type */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="transaction-type"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Opening Amount Type
-              </label>
+            {/* Type and Method */}
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+              {/* Opening Amount Type */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="opening-amount-type"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Opening Amount Type
+                </label>
 
-              <select
-                id="transaction-type"
-                name="amountType"
-                value={formData.amountType}
-                onChange={handleChange}
-                className={`w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition ${errors.amountType
-                  ? 'border-red-400 focus:border-red-500'
-                  : 'border-zinc-300 focus:border-zinc-500'
-                  }`}
-              >
-                <option value="">
-                  Select Amount Type
-                </option>
+                <select
+                  id="opening-amount-type"
+                  name="opening_amount_type"
+                  value={formData.opening_amount_type}
+                  onChange={handleChange}
+                  disabled={isSaving || !searchedStudent}
+                  className={`w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition ${errors.opening_amount_type
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-zinc-300 focus:border-zinc-500'
+                    } ${!searchedStudent && 'bg-zinc-50 border text-zinc-500'}`}
+                >
+                  <option value=""> Select Amount Type </option>
+                  <option value="debit"> Debit (+) </option>
+                  <option value="credit"> Credit (-) </option>
+                </select>
 
-                <option value="debit">
-                  Debit (+)
-                </option>
-                <option value="credit">
-                  Credit (-)
-                </option>
+                {errors.opening_amount_type && (
+                  <p className="text-xs text-red-500">
+                    {errors.opening_amount_type}
+                  </p>
+                )}
+              </div>
 
-              </select>
+              {/* Payment Method */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="payment-method"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Payment Method
+                </label>
 
-              {errors.amountType && (
-                <p className="text-xs text-red-500">
-                  {errors.amountType}
-                </p>
-              )}
+                <select
+                  id="payment-method"
+                  name="payment_method"
+                  value={formData.payment_method}
+                  onChange={handleChange}
+                  disabled={isSaving || !searchedStudent}
+                  className={`w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-500 ${!searchedStudent && 'bg-zinc-50 border text-zinc-500'}`}
+                >
+                  <option value="cash"> Cash </option>
+                  <option value="bank"> Bank </option>
+                  <option value="kbzpay"> KBZ Pay </option>
+                </select>
+              </div>
             </div>
 
             {/* Amount */}
@@ -406,30 +483,34 @@ export function BankAction({
               </label>
 
               <div
-                className={`flex items-center rounded-md border px-3 transition ${errors.amount
+                className={`flex items-center rounded-md border px-3 transition ${errors.balance
                   ? 'border-red-400 focus-within:border-red-500'
                   : 'border-zinc-300 focus-within:border-zinc-500'
-                  }`}
+                  } ${!searchedStudent && 'bg-zinc-50 border text-zinc-500'}`}
               >
                 <input
                   id="amount"
-                  name="amount"
+                  name="balance"
                   type="number"
                   min="1"
-                  value={formData.amount}
+                  value={formData.balance || ''}
                   onChange={handleChange}
+                  disabled={isSaving || !searchedStudent}
                   placeholder="Enter amount"
-                  className={`w-full bg-transparent py-2 text-sm outline-none ${formData.amountType === 'credit' ? 'text-red-500' : 'text-zinc-950'}`}
+                  className={`w-full bg-transparent py-2 text-sm outline-none ${formData.opening_amount_type === 'credit'
+                    ? 'text-red-500'
+                    : 'text-zinc-950'
+                    } `}
                 />
 
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs ps-2 text-zinc-400">
                   MMK
                 </span>
               </div>
 
-              {errors.amount && (
+              {errors.balance && (
                 <p className="text-xs text-red-500">
-                  {errors.amount}
+                  {errors.balance}
                 </p>
               )}
             </div>
@@ -439,9 +520,10 @@ export function BankAction({
           <div className="flex items-center justify-end gap-2 py-2">
             <Button
               type="button"
-              onClick={closeForm}
+              onClick={handleClose}
               icon={XIcon}
               variant="danger"
+              disabled={isSaving}
             >
               Cancel
             </Button>
@@ -450,11 +532,16 @@ export function BankAction({
               type="button"
               onClick={submitForm}
               icon={Save}
+              disabled={isSaving || !searchedStudent}
             >
-              {isEdit ? 'Update' : 'Save'}
+              {isSaving
+                ? 'Saving...'
+                : isEdit
+                  ? 'Update'
+                  : 'Save'}
             </Button>
           </div>
-
+          
         </div>
       </div>
     </div>

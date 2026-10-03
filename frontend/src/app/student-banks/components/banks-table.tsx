@@ -17,29 +17,42 @@ export function BanksTable({
     <div className="overflow-hidden rounded-md border border-zinc-200">
       <div className="overflow-x-auto">
         <table className="w-full">
+          <colgroup>
+            <col className='w-[13%]' />
+            <col className='w-[7%]' />
+            <col className='w-[20%]' />
+            <col className='w-[20%]' />
+            <col className='w-[11%]' />
+            <col className='w-[18%]' />
+            <col className='w-[11%]' />
+          </colgroup>
           <thead>
             <tr className="border-b bg-zinc-50">
-              <th className="px-6 py-2.5 text-left text-sm font-medium text-zinc-700">
+              <th className="px-6 py-2.5 text-left text-sm font-semibold text-zinc-700">
                 Student Code
               </th>
 
-              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+              <th className="px-6 py-2.5 text-left text-sm font-semibold text-zinc-700">
+                Photo
+              </th>
+
+              <th className="px-4 py-2.5 text-left text-sm font-semibold text-zinc-700">
                 Student Name
               </th>
 
-              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+              <th className="px-4 py-2.5 text-left text-sm font-semibold text-zinc-700">
                 Father Name
               </th>
 
-              <th className="px-4 py-2.5 text-left text-sm font-medium text-zinc-700">
+              <th className="px-4 py-2.5 text-left text-sm font-semibold text-zinc-700">
                 Grade
               </th>
 
-              <th className="px-4 py-2.5 text-right text-sm font-medium text-zinc-700">
+              <th className="px-4 py-2.5 text-right text-sm font-semibold text-zinc-700">
                 Balance
               </th>
 
-              <th className="px-6 py-2.5 text-right text-sm font-medium text-zinc-700">
+              <th className="px-6 py-2.5 text-right text-sm font-semibold text-zinc-700">
                 Actions
               </th>
             </tr>
@@ -47,15 +60,18 @@ export function BanksTable({
 
           <tbody>
             {banks.map((bank, index) => {
-              const amount = Number(bank.balance).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })
+              const amount = Number(bank.balance).toLocaleString().replace('-', '')
 
               return (
                 <tr key={index} className="border-b last:border-0 hover:bg-zinc-50">
                   <td className="px-6 py-3 text-sm text-zinc-600 w-40">
                     {bank.student_code}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-zinc-600 flex items-center justify-center">
+                    <div className='size-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold'>
+                      PF
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 text-sm text-zinc-600">
@@ -72,7 +88,6 @@ export function BanksTable({
 
                   <td className={`px-4 py-3 text-right text-sm text-zinc-600`}>
                     <span className={isCreditBalance(Number(bank.balance)) ? 'text-red-500' : 'text-zinc-600'}>
-                      {/* {bank.balance.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 0 })} MMK */}
                       {amount} MMK
                     </span>
                   </td>

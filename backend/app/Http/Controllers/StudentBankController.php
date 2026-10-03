@@ -7,7 +7,6 @@ use App\Http\Requests\StudentBank\UpdateStudentBankRequest;
 use App\Http\Resources\StudentBankResource;
 use App\Models\StudentBank;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class StudentBankController extends Controller
 {
@@ -18,6 +17,11 @@ class StudentBankController extends Controller
         Request $request,
     ) {
         $studentBanks = StudentBank::query()
+            ->when($request->filled('student_code'), function ($query) use ($request) {
+                $code = $request->student_code;
+
+                $query->where('student_code', $code);
+            })
             ->latest()
             ->paginate(
                 perPage: $request->integer('per_page', 15)
@@ -32,23 +36,11 @@ class StudentBankController extends Controller
     public function store(
         StoreStudentBankRequest $request,
     ) {
-        $studentBank = DB::transaction(function () use ($request) {
-            $data = $request->validated();
-            $openingAmountType = $data['amount_type'] === 'credit' ? 'cash_out' : 'cash_in';
-            unset($data['amount_type']);
-
-            $studentBank = StudentBank::create($data);
-
-            $studentBank->transcations()->create([
-                'transcation_type' => $openingAmountType,
-                'date' => now(),
-                'description' => 'Opening amount',
-                'payment_method' => 'Not provided',
-                'amount' => $studentBank->balance,
-            ]);
-
-            return $studentBank;
-        });
+        $data = $request->validated();
+        // $paymentMethod = $data['payment_method'];
+        // $openingAmountType = $data['opening_amount_type'] === 'credit' ? 'cash_out' : 'cash_in';
+        unset($data['opening_amount_type'], $data['payment_method']);
+        $studentBank = StudentBank::create($data);
 
         return new StudentBankResource($studentBank);
     }
@@ -59,7 +51,8 @@ class StudentBankController extends Controller
     public function show(
         string $id,
     ) {
-        $student_bank = StudentBank::with(['transcations.images'])->findOrFail($id);
+        $student_bank = StudentBank::with(['transcations.images', 'transcations.bank:id,balance'])->findOrFail($id);
+
         return new StudentBankResource($student_bank);
     }
 
@@ -68,12 +61,15 @@ class StudentBankController extends Controller
      */
     public function update(
         UpdateStudentBankRequest $request,
-        string $id,
     ) {
-        $student_bank = StudentBank::findOfFail($id);
-        $student_bank->update($request->validated());
+        $bank = StudentBank::findOrFail($request->student_bank);
+        $data = $request->validated();
+        // $paymentMethod = $data['payment_method'];
+        // $openingAmountType = $data['opening_amount_type'] === 'credit' ? 'cash_out' : 'cash_in';
+        unset($data['opening_amount_type'], $data['payment_method']);
 
-        return new StudentBankResource($student_bank->refresh());
+        $bank->update($data);
+        return new StudentBankResource($bank->refresh());
     }
 
     /**

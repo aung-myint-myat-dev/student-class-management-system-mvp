@@ -5,6 +5,8 @@ export interface _studentBankSchema {
   father_name: string
   grade: string
   balance: number
+  payment_method: 'cash' | 'kpay' | 'wave'
+  opening_amount_type: 'debit' | 'credit'
   transcations?: _studentBankTranscation[]
 }
 
@@ -29,6 +31,14 @@ export interface _studentBankTranscation {
   amount: number,
   description: string,
   payment_method: string,
+  remaing_balance: number,
+  images: _studentBankTranscationImage[]
   created_at: string,
   updated_at: string
+}
+
+export interface _studentBankTranscationImage {
+  id: string,
+  student_bank_transcation_id: string
+  image_url: string
 }

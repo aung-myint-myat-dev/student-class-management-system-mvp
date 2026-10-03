@@ -4,22 +4,43 @@ import { useEffect, useState } from "react"
 import { InfoRow } from "./components/info-row"
 import { TranscationForm } from "./components/transcation-form"
 import { TranscationHistoriesTable } from "./components/transcation-histories-table"
-import type { _studentBankSchema } from "./data/schema"
+import type { _studentBankSchema, _studentBankTranscation } from "./data/schema"
 import { api } from "@/lib/api"
 
 export function BankDetail() {
   const { id } = useParams()
   const [bank, setBank] = useState<_studentBankSchema | null>(null)
-  
+  const [isEdit, setIsEdit] = useState<boolean>(false)
+  const [selectedTranscation, setSelectedTranscation] = useState<_studentBankTranscation | null>(null)
+  const handleEditTranscation = (transcation: _studentBankTranscation) => {
+    setSelectedTranscation(transcation)
+    setIsEdit(true)
+  }
+
+  const handleCancelEditTranscation = () => {
+    setIsEdit(false)
+    fetchBank()
+    setSelectedTranscation(null)
+  }
+
+  useEffect(() => {
+    if (isEdit) {
+      console.log(selectedTranscation)
+    }
+  })
+
   const fetchBank = async () => {
+    setIsEdit(false)
+    setSelectedTranscation(null)
     const res = await api.get(`student-banks/${id}`)
     const bank = res.data.data
     setBank(bank)
   }
 
   useEffect(() => {
-    if(!id) return
+    if (!id) return
     fetchBank()
+    console.log(bank)
   }, [])
 
   if (!bank) return <div>No account.</div>
@@ -28,7 +49,7 @@ export function BankDetail() {
       <PageHeader isDetail={true} title="Account Detail" des="Transcation histories and detail informations." />
 
       <section className="flex items-center gap-4">
-        <div className="border flex flex-col justify-center gap-6 shadow-sm rounded-md col-span-2 p-6 h-50">
+        <div className="border flex flex-col justify-center gap-6 shadow-xs rounded-md col-span-2 p-6 h-50">
           <div className="flex items-center gap-3">
             {/* Avatar */}
             <div className="size-16 bg-green-500 flex items-center justify-center text-2xl font-bold text-white rounded-full">
@@ -46,11 +67,11 @@ export function BankDetail() {
           </div>
         </div>
 
-        <TranscationForm />
+        <TranscationForm id={bank.id} onAfterSubmit={fetchBank} isEdit={isEdit} selectedTranscation={selectedTranscation} cancelEdit={handleCancelEditTranscation}/>
       </section>
 
       {/* Transcation History */}
-      <TranscationHistoriesTable histories={bank.transcations ?? []} mainBalance={bank.balance} />
+      <TranscationHistoriesTable fetchBank={fetchBank} histories={bank.transcations ?? []} mainBalance={bank.balance} onEdit={handleEditTranscation}/>
     </div>
   )
 }
