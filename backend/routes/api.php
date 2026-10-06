@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\StudentBankController;
 use App\Http\Controllers\StudentBankTranscationController;
 use App\Http\Controllers\StudentController;
@@ -15,3 +16,6 @@ Route::delete('transcations/{id}', [StudentBankTranscationController::class, 'de
 Route::get('/students/find/{student_code}', [StudentController::class, 'findByCode']);
 Route::apiResource('classrooms', ClassroomController::class);
 Route::apiResource('student-banks', StudentBankController::class);
+
+Route::apiResource('payments', PaymentController::class)->parameters(['payments' => 'id']);
+Route::patch('payments/{id}/toggle-active', [PaymentController::class, 'toggleIsActive']);
